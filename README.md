@@ -1,9 +1,8 @@
-#Monocular Vision Localization Technology for UAVs  
+# Monocular Vision Localization Technology for UAVs  
 Mingche Li  
-#(Adlai E. Stevenson High School, Grade 11)
 
-#Abstract:  
-#To address the UAS4STEM 2024 competition challenge (where a drone must
+## Abstract:  
+To address the UAS4STEM 2024 competition challenge (where a drone must
 identify a QR code on a 4'x4' target in the air and pick up/drop off an
 item), a system was designed using monocular camera-based QR recognition
 and vision-based localization technology. By using a pre-trained QR
@@ -12,35 +11,35 @@ detected, and a series of coordinate transformations using camera
 intrinsic parameters, and drone flight data (altitude, attitude angles,
 GPS), we can ultimately calculate the QR code's GPS coordinates.
 
-1.  **System Structure:  
-    **The system mainly consists of a flight control system, a Raspberry
+1.  ## System Structure:  
+    ### The system mainly consists of a flight control system, a Raspberry
     Pi, and an OAK AI smart camera. The flight control system provides
     real-time altitude, attitude angles, and GPS information about the
     UAV. The OAK smart camera handles QR code recognition and provides
     the QR code’s pixel coordinates. The Raspberry Pi uses the data to
     calculate the QR code's location. See the schematic below:
 
-2.  **Localization Algorithm:  
-    **2.1 **Coordinate System Definitions:**
+2.  ## Localization Algorithm:  
+    ### 2.1 **Coordinate System Definitions:**
 
-- **2.1.1 Pixel Coordinate System:  
-  **A 2D coordinate system with the image's top-left corner as the
+- #### 2.1.1 Pixel Coordinate System:  
+     A 2D coordinate system with the image's top-left corner as the
   origin.<img src="media/image8.png" style="width:2.02431in;height:1.82222in" />
 
-- **2.1.2 Camera Coordinate System:  
-  **A 3D coordinate system with the camera’s focal point as the origin,
+- #### 2.1.2 Camera Coordinate System:  
+     A 3D coordinate system with the camera’s focal point as the origin,
   and the optical axis as the Z-axis, conforming to a right-handed
   coordinate system.
   <img src="media/image14.png" style="width:2.41319in;height:1.56389in" />
 
-- **2.1.3 World Coordinate System:  
-  **This auxiliary system is located on the ground plane. The Y-axis is
+- #### 2.1.3 World Coordinate System:  
+  This auxiliary system is located on the ground plane. The Y-axis is
   vertical, passing through the origin of the camera coordinate system,
   and the height between origins is the camera’s altitude h.
 
 > <img src="media/image12.png" style="width:3.12847in;height:2.06319in" />
 
-- **2.1.4 UAV Coordinate System:**
+- #### 2.1.4 UAV Coordinate System:
 
 > A 3D coordinate system with its origin at the center of the UAV
 > (assuming the flight controller’s sensors are installed at the center
@@ -48,7 +47,7 @@ GPS), we can ultimately calculate the QR code's GPS coordinates.
 
 <img src="media/image1.png" style="width:2.33264in;height:2.41458in" />
 
-- **2.1.5 NED Coordinate System:**
+- #### 2.1.5 NED Coordinate System:
 
 Origin is based on the center of the UAV. The axes are defined as
 follows:
@@ -64,19 +63,19 @@ follows:
 
 <img src="media/image15.png" style="width:2.38403in;height:2.40903in" />
 
-- **2.1.6 Earth-Centered, Earth-Fixed (ECEF) Coordinate System:**
+- #### 2.1.6 Earth-Centered, Earth-Fixed (ECEF) Coordinate System:
 
 ECEF. Refer to Reference 10 for details.
 
 <img src="media/image13.png" style="width:3.89097in;height:3.29028in" />
 
-- **2.1.7 GPS Coordinate System:**
+- #### 2.1.7 GPS Coordinate System:**
 
 Based on the WGS84 reference system. Refer to Reference 9 for details.
 
 <img src="media/image10.png" style="width:3.91667in;height:2.77083in" />
 
-2.2 **Coordinate Transformation and Position Calculation:  
+### 2.2 Coordinate Transformation and Position Calculation:  
 **First, we need to integrate the coordinate axis rotation function
 (reference 1):
 
@@ -104,8 +103,8 @@ np.cos(gamma), 0\], \[0, 0, 1\]\])
 
 return rot
 
-- **2.2.1 Pixel to Camera Coordinate Conversion:  
-  **On the 2D pixel coordinates, the point Oc lays on (U/2, V/2)
+- #### 2.2.1 Pixel to Camera Coordinate Conversion:  
+  On the 2D pixel coordinates, the point Oc lays on (U/2, V/2)
   according to the pinhole camera model(Refer to Reference 2, 3, 4)
 
 > x_c = -(u-u0)\*dx/focalL
@@ -175,8 +174,8 @@ y_prime_c = -h
 original_camera_coords = np.linalg.inv(R) @ np.array(\[x_prime_c, -h,
 z_prime_c\])
 
-- **2.2.2 Camera to UAV Coordinate Conversion:  
-  **As shown in the diagram, the relationship between the camera and the
+- #### 2.2.2 Camera to UAV Coordinate Conversion:  
+  As shown in the diagram, the relationship between the camera and the
   UAV involves:
 
   - A counterclockwise rotation of 90∘ around the Z<sub>c</sub> axis.
@@ -189,27 +188,27 @@ uav_pos = rotate_axis_z(np.deg2rad(90)) @ camera_pos + T
 
 <img src="media/image4.png" style="width:2.99653in;height:2.84931in" />
 
-- **2.2.3 UAV to NED Conversion:  
+- #### 2.2.3 UAV to NED Conversion:  
   **Transformation depends on attitude angles (Reference 5):
 
 1.  Define rotation matrices:
+```
+   r_z = rotate_axis_z(np.deg2rad(yaw))
 
-> r_z = rotate_axis_z(np.deg2rad(yaw))
->
-> r_y = rotate_axis_y(np.deg2rad(pitch))
->
-> r_x = rotate_axis_x(np.deg2rad(roll))
+   r_y = rotate_axis_y(np.deg2rad(pitch))
 
+   r_x = rotate_axis_x(np.deg2rad(roll))
+```
 2.  From NED to UAV:
 
     - Rotate by yaw(R<sub>z</sub>), then pitch(R<sub>y</sub>), and
       finally roll(R<sub>x</sub>):
 
-> R<sub>NED2UAV</sub> =Rz(yaw)-\>Ry(pitch)-\>Rx(roll)
->
-> R<sub>NED2UAV</sub> =r_x @ r_y @ r_z
-
-- **2.2.4 NED to GPS Conversion:  
+```
+   R<sub>NED2UAV</sub> =Rz(yaw)-\>Ry(pitch)-\>Rx(roll)
+   R<sub>NED2UAV</sub> =r_x @ r_y @ r_z
+```
+- #### 2.2.4 NED to GPS Conversion:  
   **Using known UAV GPS coordinates, we can convert them into ECEF
   coordinates.
 
@@ -241,10 +240,10 @@ Where
 Finally, the process of converting pixel coordinates into GPS
 coordinates is complete.
 
-**3. Experimental Design:  
-**The experiment is divided into two phases:
+## 3. Experimental Design:  
+The experiment is divided into two phases:
 
-- **3.1 Indoor Testing (Pixel to NED):**
+- ### 3.1 Indoor Testing (Pixel to NED):
 
 > The experimental procedure is described as follows: first, attach the
 > camera to a stand with a connector of the length T. The connector must
@@ -259,14 +258,14 @@ coordinates is complete.
 
 <img src="media/image6.png" style="width:3.66319in;height:2.93542in" />
 
-- **3.2 Outdoor Testing (NED to GPS):**
+- ### 3.2 Outdoor Testing (NED to GPS):
 
 Install the camera on the UAV, and measure the camera’s displacement T
 from the UAV’s center of gravity. Place the QR code on the ground and
 fly the UAV at various altitudes and yaw angles. Record the calculated
 GPS coordinates at each position.
 
-**4. Testing and Error Analysis:**
+## 4. Testing and Error Analysis:
 
 Pixel coordinates to NED coordinates testing:
 
@@ -285,12 +284,12 @@ shown in the table:
 | 5.154     | 6.742     | 30.8      | -10.05       |
 | 5.104     | 6.174     | 31.7      | -3.63        |
 
-**  
-**System errors include installation errors, camera distortion, and
+
+System errors include installation errors, camera distortion, and
 sensor errors. Mitigations include experimental adjustments and
 algorithmic corrections.
 
-**References:**
+# References:
 
 1.  [<u>https://mathworld.wolfram.com/RotationMatrix.html</u>](https://mathworld.wolfram.com/RotationMatrix.html)
 
@@ -314,5 +313,4 @@ algorithmic corrections.
 
 11. [<u>https://community.ptc.com/sejnu66972/attachments/sejnu66972/PTCMathcad/57177/2/Datum%20Transformations.pdf</u>](https://community.ptc.com/sejnu66972/attachments/sejnu66972/PTCMathcad/57177/2/Datum%20Transformations.pdf)
 
-**  
-**
+
