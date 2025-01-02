@@ -1,9 +1,9 @@
-**Monocular Vision Localization Technology for UAVs  
+#Monocular Vision Localization Technology for UAVs  
 Mingche Li  
-**(Adlai E. Stevenson High School, Grade 11)
+#(Adlai E. Stevenson High School, Grade 11)
 
-**Abstract:  
-**To address the UAS4STEM 2024 competition challenge (where a drone must
+#Abstract:  
+#To address the UAS4STEM 2024 competition challenge (where a drone must
 identify a QR code on a 4'x4' target in the air and pick up/drop off an
 item), a system was designed using monocular camera-based QR recognition
 and vision-based localization technology. By using a pre-trained QR
