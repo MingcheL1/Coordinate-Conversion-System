@@ -208,7 +208,7 @@ uav_pos = rotate_axis_z(np.deg2rad(90)) @ camera_pos + T
    R<sub>NED2UAV</sub> =Rz(yaw)-\>Ry(pitch)-\>Rx(roll)
    R<sub>NED2UAV</sub> =r_x @ r_y @ r_z
 ```
-- #### 2.2.4 NED to GPS Conversion:  
+- #### 2.2.4 NED to GPS Conversion (Reference 7/8/11):  
   **Using known UAV GPS coordinates, we can convert them into ECEF
   coordinates.
 
