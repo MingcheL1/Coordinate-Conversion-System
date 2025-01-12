@@ -18,26 +18,29 @@ GPS), we can ultimately calculate the QR code's GPS coordinates.
     UAV. The OAK smart camera handles QR code recognition and provides
     the QR code’s pixel coordinates. The Raspberry Pi uses the data to
     calculate the QR code's location. See the schematic below:
-
+<img src="media/image4.png" style="width:2.02431in;height:1.82222in" />
 2.  ## Localization Algorithm:  
     ### 2.1 **Coordinate System Definitions:**
 
 - #### 2.1.1 Pixel Coordinate System:  
      A 2D coordinate system with the image's top-left corner as the
-  origin.<img src="media/image8.png" style="width:2.02431in;height:1.82222in" />
+  origin.
+
+  <img src="media/image6.png" style="width:2.02431in;height:1.82222in" />
 
 - #### 2.1.2 Camera Coordinate System:  
      A 3D coordinate system with the camera’s focal point as the origin,
   and the optical axis as the Z-axis, conforming to a right-handed
   coordinate system.
-  <img src="media/image14.png" style="width:2.41319in;height:1.56389in" />
+
+  <img src="media/image8.png" style="width:2.41319in;height:1.56389in" />
 
 - #### 2.1.3 World Coordinate System:  
   This auxiliary system is located on the ground plane. The Y-axis is
   vertical, passing through the origin of the camera coordinate system,
   and the height between origins is the camera’s altitude h.
 
-> <img src="media/image12.png" style="width:3.12847in;height:2.06319in" />
+> <img src="media/image15.png" style="width:3.12847in;height:2.06319in" />
 
 - #### 2.1.4 UAV Coordinate System:
 
@@ -45,7 +48,7 @@ GPS), we can ultimately calculate the QR code's GPS coordinates.
 > (assuming the flight controller’s sensors are installed at the center
 > of the UAV), conforms to a right-handed coordinate system.
 
-<img src="media/image1.png" style="width:2.33264in;height:2.41458in" />
+<img src="media/image12.png" style="width:2.33264in;height:2.41458in" />
 
 - #### 2.1.5 NED Coordinate System:
 
@@ -61,19 +64,19 @@ follows:
 - The axis parallel to the north-south direction is the N-axis (with the
   north as the positive direction)
 
-<img src="media/image15.png" style="width:2.38403in;height:2.40903in" />
+<img src="media/image16.png" style="width:1.38403in;height:1.40903in" />
 
 - #### 2.1.6 Earth-Centered, Earth-Fixed (ECEF) Coordinate System:
 
 ECEF. Refer to Reference 10 for details.
 
-<img src="media/image13.png" style="width:3.89097in;height:3.29028in" />
+<img src="media/image3.png" width="300" height="300" />
 
 - #### 2.1.7 GPS Coordinate System:**
 
 Based on the WGS84 reference system. Refer to Reference 9 for details.
 
-<img src="media/image10.png" style="width:3.91667in;height:2.77083in" />
+<img src="media/image17.png" width="300" height="300" />
 
 ### 2.2 Coordinate Transformation and Position Calculation:  
 **First, we need to integrate the coordinate axis rotation function
@@ -81,7 +84,7 @@ Based on the WGS84 reference system. Refer to Reference 9 for details.
 
 \#Rotation around the coordinate axis, counterclockwise is positive,
 clockwise is negative
-
+```
 def rotate_axis_x(alpha):
 
 rot = np.array(\[\[1, 0, 0\], \[0, np.cos(alpha), np.sin(alpha)\], \[0,
@@ -102,17 +105,17 @@ rot = np.array(\[\[np.cos(gamma), np.sin(gamma), 0\], \[-np.sin(gamma),
 np.cos(gamma), 0\], \[0, 0, 1\]\])
 
 return rot
-
+```
 - #### 2.2.1 Pixel to Camera Coordinate Conversion:  
   On the 2D pixel coordinates, the point Oc lays on (U/2, V/2)
   according to the pinhole camera model(Refer to Reference 2, 3, 4)
+```
+ x_c = -(u-u0)\*dx/focalL
 
-> x_c = -(u-u0)\*dx/focalL
->
-> y_c = -(v-v0)\*dy/focalL
->
-> z_c = 1
+ y_c = -(v-v0)\*dy/focalL
 
+ z_c = 1
+```
 Where:
 
 - (u,v): Pixel coordinates of point P
@@ -123,11 +126,11 @@ Where:
 
 - focalL: focal length
 
-<img src="media/image19.png" style="width:3.29931in;height:2.53819in" />
+<img src="media/image15.png" style="width:3.29931in;height:2.53819in" />
 
 When the camera is installed, the optical axis (Z<sub>c</sub>) faces
 downwards, as described in this
-picture:<img src="media/image9.png" style="width:3.32847in;height:2.45278in" />
+picture:<img src="media/image7.png" style="width:3.32847in;height:2.45278in" />
 
 The camera height from the ground is h. In order to convert camera
 coordinates into world coordinates, we have to rotate -90∘ clockwise
@@ -135,7 +138,7 @@ about X<sub>c</sub> and translate by h. If the UAV has a pitch (pitch)
 and roll (roll) angle, then we need to rotate clockwise about
 Y<sub>c</sub> by roll and rotate clockwise about X<sub>c</sub> by
 90-pitch.
-
+```
 let alpha = -(90-pitch)，beta = -roll
 
 R_x = rotate_axis_x(np.deg2rad(-(90-pitch)))
@@ -153,10 +156,10 @@ x_prime_c = rotated_coords\[0\]
 y_prime_c = rotated_coords\[1\]
 
 z_prime_c = rotated_coords\[2\]
-
+```
 Since O<sub>c</sub>O<sub>w</sub>=h, y_prime_c=-h, and scaling is defined
 as scale= -h/y_prime_c. thus the world coordinates of point P are:
-
+```
 xw = x_prime_c \* scale
 
 yw = 0
@@ -173,7 +176,7 @@ y_prime_c = -h
 
 original_camera_coords = np.linalg.inv(R) @ np.array(\[x_prime_c, -h,
 z_prime_c\])
-
+```
 - #### 2.2.2 Camera to UAV Coordinate Conversion:  
   As shown in the diagram, the relationship between the camera and the
   UAV involves:
@@ -186,7 +189,7 @@ Thus:
 
 uav_pos = rotate_axis_z(np.deg2rad(90)) @ camera_pos + T
 
-<img src="media/image4.png" style="width:2.99653in;height:2.84931in" />
+<img src="media/image20.png" style="width:2.99653in;height:2.84931in" />
 
 - #### 2.2.3 UAV to NED Conversion:  
   **Transformation depends on attitude angles (Reference 5):
@@ -212,30 +215,32 @@ uav_pos = rotate_axis_z(np.deg2rad(90)) @ camera_pos + T
   **Using known UAV GPS coordinates, we can convert them into ECEF
   coordinates.
 
-<img src="media/image18.png" style="width:2.00208in;height:0.91875in" />
+<img src="media/image14.png" style="width:2.00208in;height:0.91875in" />
 
 Where
 
-<img src="media/image3.png" style="width:3.15486in;height:2.17014in" /><img src="media/image5.png" style="width:3.82917in;height:1.48056in" />
+<img src="media/image1.png" width="350" />
+
+<img src="media/image2.png" width="350" />
 
 Due to:
 
-<img src="media/image7.png" style="width:1.47431in;height:0.27083in" />  
+<img src="media/image10.png" style="width:1.47431in;height:0.27083in" />  
 Where P<sub>NED</sub> and P<sub>Ref</sub> are calculated by the previous
 steps, rotational matrix R will be defined as:
 
-<img src="media/image16.png" style="width:3.15556in;height:0.75833in" />
+<img src="media/image9.png" style="width:3.15556in;height:0.75833in" />
 
 To convert the ECEF coordinates of P<sub>ECEF</sub> back to GPS
 coordinates, we can use the following formulas:
 
-<img src="media/image11.png" style="width:1.38264in;height:0.46736in" />
+<img src="media/image13.png" style="width:1.38264in;height:0.46736in" />
 
-<img src="media/image2.png" style="width:2.39028in;height:0.99792in" />
+<img src="media/image18.png" style="width:2.39028in;height:0.99792in" />
 
 Where
 
-<img src="media/image17.png" style="width:1.65903in;height:0.92847in" />
+<img src="media/image11.png" style="width:1.65903in;height:0.92847in" />
 
 Finally, the process of converting pixel coordinates into GPS
 coordinates is complete.
@@ -256,7 +261,7 @@ The experiment is divided into two phases:
 > the QR code’s center. Finally, record the calculated GPS coordinates
 > at each position.
 
-<img src="media/image6.png" style="width:3.66319in;height:2.93542in" />
+<img src="media/image19.png" style="width:3.66319in;height:2.93542in" />
 
 - ### 3.2 Outdoor Testing (NED to GPS):
 
