@@ -7,48 +7,49 @@ identify a QR code on a 4'x4' target in the air and pick up/drop off an
 item), a system was designed using monocular camera-based QR recognition
 and vision-based localization technology. By using a pre-trained QR
 recognition model, the QR code's pixel position on the image plane is
-detected, and a series of coordinate transformations using camera
+detected, and a series of coordinate transformations using the camera
 intrinsic parameters, and drone flight data (altitude, attitude angles,
 GPS), we can ultimately calculate the QR code's GPS coordinates.
 
-1.  ## System Structure:  
-    ### The system mainly consists of a flight control system, a Raspberry
-    Pi, and an OAK AI smart camera. The flight control system provides
-    real-time altitude, attitude angles, and GPS information about the
-    UAV. The OAK smart camera handles QR code recognition and provides
-    the QR code’s pixel coordinates. The Raspberry Pi uses the data to
-    calculate the QR code's location. See the schematic below:
-<img src="media/image4.png" style="width:2.02431in;height:1.82222in" />
-2.  ## Localization Algorithm:  
-    ### 2.1 **Coordinate System Definitions:**
+## 1. System Structure:
+The system mainly consists of a flight control system, a Raspberry
+Pi, and an OAK AI smart camera. The flight control system provides
+real-time altitude, attitude angles, and GPS information about the
+UAV. The OAK smart camera handles QR code recognition and provides
+the QR code’s pixel coordinates. The Raspberry Pi uses the data to
+calculate the QR code's location. See the schematic below:
+    
+<img src="media/image4.png"/>
+
+## 2. Localization Algorithm:  
+  - ### 2.1 Coordinate System Definitions:
 
 - #### 2.1.1 Pixel Coordinate System:  
      A 2D coordinate system with the image's top-left corner as the
   origin.
 
-  <img src="media/image6.png" style="width:2.02431in;height:1.82222in" />
+  <img src="media/image6.png"  />
 
 - #### 2.1.2 Camera Coordinate System:  
      A 3D coordinate system with the camera’s focal point as the origin,
   and the optical axis as the Z-axis, conforming to a right-handed
   coordinate system.
 
-  <img src="media/image8.png" style="width:2.41319in;height:1.56389in" />
+  <img src="media/image8.png"  />
 
 - #### 2.1.3 World Coordinate System:  
   This auxiliary system is located on the ground plane. The Y-axis is
   vertical, passing through the origin of the camera coordinate system,
   and the height between origins is the camera’s altitude h.
 
-> <img src="media/image15.png" style="width:3.12847in;height:2.06319in" />
+ <img src="media/image15.png" />
 
 - #### 2.1.4 UAV Coordinate System:
+  A 3D coordinate system with its origin at the center of the UAV
+  (assuming the flight controller’s sensors are installed at the center
+  of the UAV), conforms to a right-handed coordinate system.
 
-> A 3D coordinate system with its origin at the center of the UAV
-> (assuming the flight controller’s sensors are installed at the center
-> of the UAV), conforms to a right-handed coordinate system.
-
-<img src="media/image12.png" style="width:2.33264in;height:2.41458in" />
+<img src="media/image12.png" />
 
 - #### 2.1.5 NED Coordinate System:
 
@@ -64,55 +65,46 @@ follows:
 - The axis parallel to the north-south direction is the N-axis (with the
   north as the positive direction)
 
-<img src="media/image16.png" style="width:1.38403in;height:1.40903in" />
+<img src="media/image16.png" />
 
 - #### 2.1.6 Earth-Centered, Earth-Fixed (ECEF) Coordinate System:
 
 ECEF. Refer to Reference 10 for details.
 
-<img src="media/image3.png" width="300" height="300" />
+<img src="media/image3.png" width="300" />
 
-- #### 2.1.7 GPS Coordinate System:**
+- #### 2.1.7 GPS Coordinate System:
 
 Based on the WGS84 reference system. Refer to Reference 9 for details.
 
-<img src="media/image17.png" width="300" height="300" />
+<img src="media/image17.png" width="300" />
 
 ### 2.2 Coordinate Transformation and Position Calculation:  
-**First, we need to integrate the coordinate axis rotation function
+First, we need to integrate the coordinate axis rotation function
 (reference 1):
 
-\#Rotation around the coordinate axis, counterclockwise is positive,
+Rotation around the coordinate axis, counterclockwise is positive,
 clockwise is negative
 ```
 def rotate_axis_x(alpha):
-
-rot = np.array(\[\[1, 0, 0\], \[0, np.cos(alpha), np.sin(alpha)\], \[0,
--np.sin(alpha), np.cos(alpha)\]\])
-
-return rot
+    rot = np.array([[1, 0, 0], [0, np.cos(alpha), np.sin(alpha)], [0,-np.sin(alpha), np.cos(alpha)]])
+    return rot
 
 def rotate_axis_y(beta):
-
-rot = np.array(\[\[np.cos(beta), 0, -np.sin(beta)\], \[0, 1, 0\], \[0,
-np.sin(beta), np.cos(beta)\]\])
-
-return rot
+    rot = np.array([[np.cos(beta), 0, -np.sin(beta)], [0, 1, 0], [0,np.sin(beta), np.cos(beta)]])
+    return rot
 
 def rotate_axis_z(gamma):
-
-rot = np.array(\[\[np.cos(gamma), np.sin(gamma), 0\], \[-np.sin(gamma),
-np.cos(gamma), 0\], \[0, 0, 1\]\])
-
-return rot
+    rot = np.array([[np.cos(gamma), np.sin(gamma), 0], [-np.sin(gamma),np.cos(gamma), 0], [0, 0, 1]])
+    return rot
 ```
 - #### 2.2.1 Pixel to Camera Coordinate Conversion:  
   On the 2D pixel coordinates, the point Oc lays on (U/2, V/2)
   according to the pinhole camera model(Refer to Reference 2, 3, 4)
 ```
- x_c = -(u-u0)\*dx/focalL
+ x_c = -(u-u0)*dx/focalL
 
- y_c = -(v-v0)\*dy/focalL
+ y_c = -(v-v0)*dy/focalL
 
  z_c = 1
 ```
@@ -126,13 +118,13 @@ Where:
 
 - focalL: focal length
 
-<img src="media/image15.png" style="width:3.29931in;height:2.53819in" />
+<img src="media/image15.png" />
 
 When the camera is installed, the optical axis (Z<sub>c</sub>) faces
 downwards, as described in this
-picture:<img src="media/image7.png" style="width:3.32847in;height:2.45278in" />
+picture:<img src="media/image7.png" />
 
-The camera height from the ground is h. In order to convert camera
+The camera height from the ground is h. In order to convert the camera
 coordinates into world coordinates, we have to rotate -90∘ clockwise
 about X<sub>c</sub> and translate by h. If the UAV has a pitch (pitch)
 and roll (roll) angle, then we need to rotate clockwise about
@@ -147,35 +139,34 @@ R_y = rotate_axis_y(np.deg2rad(-roll))
 
 R = R_x @ R_y
 
-camera_coords = np.array(\[x_c, y_c, z_c\])
+camera_coords = np.array([x_c, y_c, z_c])
 
 rotated_coords = R @ camera_coords
 
-x_prime_c = rotated_coords\[0\]
+x_prime_c = rotated_coords[0]
 
-y_prime_c = rotated_coords\[1\]
+y_prime_c = rotated_coords[1]
 
-z_prime_c = rotated_coords\[2\]
+z_prime_c = rotated_coords[2]
 ```
 Since O<sub>c</sub>O<sub>w</sub>=h, y_prime_c=-h, and scaling is defined
 as scale= -h/y_prime_c. thus the world coordinates of point P are:
 ```
-xw = x_prime_c \* scale
+xw = x_prime_c * scale
 
 yw = 0
 
-zw = z_prime_c \* scale
-
+zw = z_prime_c * scale
+```
 To calculate the original camera coordinates:
+```
+x_prime_c *= scale
 
-x_prime_c \*= scale
-
-z_prime_c \*= scale
+z_prime_c *= scale
 
 y_prime_c = -h
 
-original_camera_coords = np.linalg.inv(R) @ np.array(\[x_prime_c, -h,
-z_prime_c\])
+original_camera_coords = np.linalg.inv(R) @ np.array([x_prime_c, -h,z_prime_c])
 ```
 - #### 2.2.2 Camera to UAV Coordinate Conversion:  
   As shown in the diagram, the relationship between the camera and the
@@ -186,13 +177,13 @@ z_prime_c\])
   - A translation by offset T.
 
 Thus:
-
+```
 uav_pos = rotate_axis_z(np.deg2rad(90)) @ camera_pos + T
-
-<img src="media/image20.png" style="width:2.99653in;height:2.84931in" />
+```
+<img src="media/image20.png" />
 
 - #### 2.2.3 UAV to NED Conversion:  
-  **Transformation depends on attitude angles (Reference 5):
+  Transformation depends on attitude angles (Reference 5):
 
 1.  Define rotation matrices:
 ```
@@ -204,18 +195,17 @@ uav_pos = rotate_axis_z(np.deg2rad(90)) @ camera_pos + T
 ```
 2.  From NED to UAV:
 
-    - Rotate by yaw(R<sub>z</sub>), then pitch(R<sub>y</sub>), and
-      finally roll(R<sub>x</sub>):
+    Rotate by yaw(R<sub>z</sub>), then pitch(R<sub>y</sub>), and finally roll(R<sub>x</sub>):
 
-```
-   R<sub>NED2UAV</sub> =Rz(yaw)-\>Ry(pitch)-\>Rx(roll)
-   R<sub>NED2UAV</sub> =r_x @ r_y @ r_z
-```
+    R<sub>NED2UAV</sub> =Rz(yaw)->Ry(pitch)->Rx(roll)
+   
+    R<sub>NED2UAV</sub> =r_x @ r_y @ r_z
+
 - #### 2.2.4 NED to GPS Conversion (Reference 7/8/11):  
-  **Using known UAV GPS coordinates, we can convert them into ECEF
+  Using known UAV GPS coordinates, we can convert them into ECEF
   coordinates.
 
-<img src="media/image14.png" style="width:2.00208in;height:0.91875in" />
+<img src="media/image14.png"  />
 
 Where
 
@@ -225,43 +215,43 @@ Where
 
 Due to:
 
-<img src="media/image10.png" style="width:1.47431in;height:0.27083in" />  
+<img src="media/image10.png" />  
 Where P<sub>NED</sub> and P<sub>Ref</sub> are calculated by the previous
 steps, rotational matrix R will be defined as:
 
-<img src="media/image9.png" style="width:3.15556in;height:0.75833in" />
+<img src="media/image9.png" />
 
 To convert the ECEF coordinates of P<sub>ECEF</sub> back to GPS
 coordinates, we can use the following formulas:
 
-<img src="media/image13.png" style="width:1.38264in;height:0.46736in" />
+<img src="media/image13.png" />
 
-<img src="media/image18.png" style="width:2.39028in;height:0.99792in" />
+<img src="media/image18.png" />
 
 Where
 
-<img src="media/image11.png" style="width:1.65903in;height:0.92847in" />
+<img src="media/image11.png" />
 
 Finally, the process of converting pixel coordinates into GPS
-coordinates is complete.
+coordinates are complete.
 
 ## 3. Experimental Design:  
 The experiment is divided into two phases:
 
 - ### 3.1 Indoor Testing (Pixel to NED):
 
-> The experimental procedure is described as follows: first, attach the
-> camera to a stand with a connector of the length T. The connector must
-> be able to freely rotate at the stand’s top, simulating the UAV’s
-> attitude angles (excluding yaw). Additionally, the stand has to be
-> perpendicular to the surface you are testing with. Then, adjust the
-> height of the stand to simulate various altitudes of the UAV. Through
-> the use of the IMU within the OAK-D Lite Camera, we can use the
-> attitude angles (excluding yaw), and calculate the NED coordinates of
-> the QR code’s center. Finally, record the calculated GPS coordinates
-> at each position.
+ The experimental procedure is described as follows: first, attach the
+ camera to a stand with a connector of the length T. The connector must
+ be able to freely rotate at the stand’s top, simulating the UAV’s
+ attitude angles (excluding yaw). Additionally, the stand has to be
+ perpendicular to the surface you are testing with. Then, adjust the
+ height of the stand to simulate various altitudes of the UAV. Through
+ the use of the IMU within the OAK-D Lite Camera, we can use the
+ attitude angles (excluding yaw), and calculate the NED coordinates of
+ the QR code’s center. Finally, record the calculated GPS coordinates
+ at each position.
 
-<img src="media/image19.png" style="width:3.66319in;height:2.93542in" />
+<img src="media/image19.png"  />
 
 - ### 3.2 Outdoor Testing (NED to GPS):
 
@@ -274,7 +264,7 @@ GPS coordinates at each position.
 
 Pixel coordinates to NED coordinates testing:
 
-The QR code is placed x=5cm and y=6cm away from the camera, results are
+The QR code is placed x=5cm and y=6cm away from the camera, the results are
 shown in the table:
 
 | **x(cm)** | **y(cm)** | **h(cm)** | **pitch(°)** |
