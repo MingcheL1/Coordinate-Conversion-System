@@ -42,7 +42,7 @@ calculate the QR code's location. See the schematic below:
   vertical, passing through the origin of the camera coordinate system,
   and the height between origins is the camera’s altitude h.
 
- <img src="media/image15.png" />
+ <img src="media/image5.png" />
 
 - #### 2.1.4 UAV Coordinate System:
   A 3D coordinate system with its origin at the center of the UAV
